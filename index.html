@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>유진쌤 아카이브</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (Gaegu / Noto Sans KR) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@700&family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #d1eca3;
+            overflow-x: hidden;
+        }
+
+        .title-font {
+            font-family: 'Gaegu', cursive, sans-serif;
+        }
+
+        /* 손그림 느낌의 타원 테두리 */
+        .hand-drawn-ellipse {
+            border: 6px solid #f97316;
+            border-radius: 50% 45% 55% 48% / 48% 52% 48% 52%;
+            transform: rotate(-3deg);
+            box-shadow: inset 0 0 0 3px #fb923c, 0 8px 15px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .hand-drawn-ellipse:hover {
+            transform: rotate(0deg) scale(1.02);
+        }
+
+        /* 하얀색 길 (SVG 하단 레이어) */
+        .path-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* 카드 호버 효과 */
+        .app-card {
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            cursor: pointer;
+        }
+
+        .app-card:hover {
+            transform: translateY(-8px) scale(1.05);
+        }
+
+        .app-card:hover .badge-num {
+            background-color: #f97316;
+            transform: scale(1.2);
+        }
+
+        /* 번호 배지 기본 스타일 */
+        .badge-num {
+            background-color: #1e293b;
+            color: #ffffff;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        /* 풀밭 배경 잔디 애니메이션/패턴 */
+        .grass-patch {
+            color: #70b33f;
+            opacity: 0.7;
+            user-select: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen relative flex items-center justify-center p-4 sm:p-8">
+
+    <!-- 잔디 모티브 배경 요소들 -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
+        <div class="grass-patch absolute top-12 left-1/4 text-2xl"><i class="fa-solid fa-seedling"></i></div>
+        <div class="grass-patch absolute top-1/3 left-1/12 text-3xl"><i class="fa-solid fa-seedling"></i></div>
+        <div class="grass-patch absolute top-1/2 left-1/3 text-2xl"><i class="fa-solid fa-seedling"></i></div>
+        <div class="grass-patch absolute bottom-1/4 left-1/5 text-3xl"><i class="fa-solid fa-seedling"></i></div>
+        <div class="grass-patch absolute top-20 right-1/3 text-2xl"><i class="fa-solid fa-seedling"></i></div>
+        <div class="grass-patch absolute top-1/2 right-1/4 text-3xl"><i class="fa-solid fa-seedling"></i></div>
+        <div class="grass-patch absolute bottom-10 right-1/3 text-2xl"><i class="fa-solid fa-seedling"></i></div>
+    </div>
+
+    <!-- 전체 캔버스 컨테이너 (비율 유지) -->
+    <div class="relative w-full max-w-[1280px] h-[720px] bg-[#d0eca0] rounded-3xl overflow-hidden shadow-2xl border-4 border-white/40">
+
+        <!-- SVG 경로 (하얗고 넓은 지도 통로) -->
+        <svg class="path-svg" viewBox="0 0 1280 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- 메인 백그라운드 길 패턴 (하얀 통로) -->
+            <path d="M 120 120 H 260 V 320 H 100 V 520 H 220 V 510 C 220 510, 410 510, 410 380 V 380 H 710 V 520 H 780 V 540 H 530 V 500 H 420 V 720" stroke="#FFFFFF" stroke-width="50" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M 260 260 H 570 V 160 H 830 V 260 H 730" stroke="#FFFFFF" stroke-width="50" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- 노드 부근을 넓혀주는 하얀 원형 및 보조 연결로 -->
+            <rect x="50" y="80" width="220" height="150" rx="40" fill="#FFFFFF" />
+            <rect x="650" y="80" width="200" height="150" rx="40" fill="#FFFFFF" />
+            <rect x="330" y="320" width="270" height="160" rx="40" fill="#FFFFFF" />
+            <rect x="50" y="550" width="180" height="140" rx="40" fill="#FFFFFF" />
+        </svg>
+
+        <!-- ======================= 1번: 형광펜 / 학습 도구 ======================= -->
+        <a id="link-1" href="#" class="app-card absolute top-[70px] left-[70px] z-10 flex flex-col items-center group">
+            <div class="relative w-44 h-32 flex items-center justify-center">
+                <!-- 형광펜 SVG 일러스트 -->
+                <svg class="w-full h-full drop-shadow-md" viewBox="0 0 160 120">
+                    <!-- 형광펜 1 (초록) -->
+                    <g transform="translate(20, 20) rotate(-15)">
+                        <rect x="0" y="20" width="24" height="60" rx="4" fill="#10b981"/>
+                        <path d="M 0 20 L 12 0 L 24 20 Z" fill="#059669"/>
+                        <rect x="4" y="80" width="16" height="10" fill="#047857"/>
+                    </g>
+                    <!-- 형광펜 2 (파랑) -->
+                    <g transform="translate(60, 15) rotate(5)">
+                        <rect x="0" y="20" width="24" height="65" rx="4" fill="#3b82f6"/>
+                        <path d="M 0 20 L 12 0 L 24 20 Z" fill="#2563eb"/>
+                        <rect x="4" y="85" width="16" height="10" fill="#1d4ed8"/>
+                    </g>
+                    <!-- 형광펜 3 (빨강) -->
+                    <g transform="translate(100, 25) rotate(20)">
+                        <rect x="0" y="20" width="24" height="60" rx="4" fill="#ef4444"/>
+                        <path d="M 0 20 L 12 0 L 24 20 Z" fill="#dc2626"/>
+                        <rect x="4" y="80" width="16" height="10" fill="#b91c1c"/>
+                    </g>
+                </svg>
+                <!-- 번호 배지 -->
+                <span class="badge-num absolute top-0 right-2 w-9 h-9 rounded-full flex items-center justify-center font-bold text-lg border-2 border-white">1</span>
+            </div>
+        </a>
+
+        <!-- ======================= 2번: 지구본 / 사회 / 세계 ======================= -->
+        <a id="link-2" href="#" class="app-card absolute top-[70px] left-[680px] z-10 flex flex-col items-center group">
+            <div class="relative w-40 h-36 flex items-center justify-center">
+                <!-- 지구본 SVG 일러스트 -->
+                <svg class="w-full h-full drop-shadow-md" viewBox="0 0 140 140">
+                    <!-- 받침대 -->
+                    <path d="M 45 125 L 95 125 L 85 115 L 55 115 Z" fill="#d97706"/>
+                    <rect x="66" y="90" width="8" height="28" fill="#b45309"/>
+                    <!-- 지구본 축 -->
+                    <path d="M 70 20 A 48 48 0 0 1 70 100" fill="none" stroke="#d97706" stroke-width="6" stroke-linecap="round"/>
+                    <!-- 구체 -->
+                    <circle cx="70" cy="60" r="36" fill="#38bdf8"/>
+                    <path d="M 50 45 Q 60 35 75 40 Q 85 50 95 45 Q 100 60 85 70 Q 60 75 50 60 Z" fill="#4ade80"/>
+                    <path d="M 45 70 Q 55 85 70 85 Q 85 85 90 75 Z" fill="#4ade80"/>
+                </svg>
+                <!-- 번호 배지 -->
+                <span class="badge-num absolute top-1 right-1 w-9 h-9 rounded-full flex items-center justify-center font-bold text-lg border-2 border-white">2</span>
+            </div>
+        </a>
+
+        <!-- ======================= 3번: 책 (중앙 아카이브) ======================= -->
+        <a id="link-3" href="#" class="app-card absolute top-[310px] left-[350px] z-10 flex flex-col items-center group">
+            <div class="relative w-52 h-36 flex items-center justify-center">
+                <!-- 쌓인 책 SVG 일러스트 -->
+                <svg class="w-full h-full drop-shadow-md" viewBox="0 0 200 140">
+                    <!-- 아래 책 (빨간색/파란색 표지) -->
+                    <g transform="translate(10, 65)">
+                        <path d="M 10 0 L 160 0 L 175 25 L 25 25 Z" fill="#ef4444"/>
+                        <rect x="20" y="25" width="150" height="18" fill="#f8fafc" rx="2"/>
+                        <path d="M 5 38 L 160 38 L 170 45 L 15 45 Z" fill="#dc2626"/>
+                        <path d="M 5 0 C 0 10 0 30 5 38" stroke="#b91c1c" stroke-width="8" fill="none"/>
+                    </g>
+                    <!-- 중간 책 (노란색/초록색 표지) -->
+                    <g transform="translate(25, 35)">
+                        <path d="M 10 0 L 140 0 L 155 22 L 25 22 Z" fill="#eab308"/>
+                        <rect x="20" y="22" width="130" height="15" fill="#f8fafc" rx="2"/>
+                        <path d="M 5 32 L 140 32 L 150 38 L 15 38 Z" fill="#ca8a04"/>
+                        <path d="M 5 0 C 0 8 0 25 5 32" stroke="#a16207" stroke-width="8" fill="none"/>
+                    </g>
+                    <!-- 맨 위 책 (초록색 표지) -->
+                    <g transform="translate(15, 5)">
+                        <path d="M 10 0 L 130 0 L 145 20 L 25 20 Z" fill="#22c55e"/>
+                        <rect x="20" y="20" width="120" height="14" fill="#f8fafc" rx="2"/>
+                        <path d="M 5 30 L 130 30 L 140 35 L 15 35 Z" fill="#16a34a"/>
+                        <path d="M 5 0 C 0 8 0 22 5 30" stroke="#15803d" stroke-width="8" fill="none"/>
+                    </g>
+                </svg>
+                <!-- 번호 배지 -->
+                <span class="badge-num absolute top-2 right-12 w-9 h-9 rounded-full flex items-center justify-center font-bold text-lg border-2 border-white">3</span>
+            </div>
+        </a>
+
+        <!-- ======================= 4번: 헤드폰 / 멀티미디어 ======================= -->
+        <a id="link-4" href="#" class="app-card absolute bottom-[40px] left-[60px] z-10 flex flex-col items-center group">
+            <div class="relative w-36 h-36 flex items-center justify-center">
+                <!-- 헤드폰 SVG 일러스트 -->
+                <svg class="w-full h-full drop-shadow-md" viewBox="0 0 140 140">
+                    <!-- 헤드밴드 -->
+                    <path d="M 25 75 A 48 48 0 0 1 115 75" fill="none" stroke="#ef4444" stroke-width="14" stroke-linecap="round"/>
+                    <!-- 왼쪽 이어컵 -->
+                    <rect x="15" y="65" width="22" height="40" rx="11" fill="#f97316"/>
+                    <rect x="27" y="70" width="12" height="30" rx="6" fill="#fbbf24"/>
+                    <!-- 오른쪽 이어컵 -->
+                    <rect x="103" y="65" width="22" height="40" rx="11" fill="#f97316"/>
+                    <rect x="101" y="70" width="12" height="30" rx="6" fill="#fbbf24"/>
+                </svg>
+                <!-- 번호 배지 -->
+                <span class="badge-num absolute top-1 left-0 w-9 h-9 rounded-full flex items-center justify-center font-bold text-lg border-2 border-white">4</span>
+            </div>
+        </a>
+
+        <!-- ======================= 5번: 오락/게임/퀴즈 타워 ======================= -->
+        <a id="link-5" href="#" class="app-card absolute bottom-[130px] right-[460px] z-10 flex flex-col items-center group">
+            <div class="relative w-28 h-44 flex items-center justify-center">
+                <!-- 해머 측정기 (High Striker) SVG -->
+                <svg class="w-full h-full drop-shadow-md" viewBox="0 0 100 160">
+                    <!-- 기둥 바닥 -->
+                    <rect x="15" y="140" width="70" height="15" fill="#1e293b" rx="3"/>
+                    <circle cx="50" cy="140" r="6" fill="#ef4444"/>
+                    <!-- 기둥 -->
+                    <rect x="42" y="30" width="16" height="110" fill="#f97316"/>
+                    <!-- 눈금선 -->
+                    <line x1="42" y1="45" x2="58" y2="45" stroke="#ffffff" stroke-width="2"/>
+                    <line x1="42" y1="60" x2="58" y2="60" stroke="#ffffff" stroke-width="2"/>
+                    <line x1="42" y1="75" x2="58" y2="75" stroke="#ffffff" stroke-width="2"/>
+                    <line x1="42" y1="90" x2="58" y2="90" stroke="#ffffff" stroke-width="2"/>
+                    <line x1="42" y1="105" x2="58" y2="105" stroke="#ffffff" stroke-width="2"/>
+                    <line x1="42" y1="120" x2="58" y2="120" stroke="#ffffff" stroke-width="2"/>
+                    <!-- 꼭대기 종 -->
+                    <circle cx="50" cy="22" r="14" fill="#f59e0b"/>
+                    <circle cx="50" cy="22" r="8" fill="#fef08a"/>
+                </svg>
+                <!-- 번호 배지 -->
+                <span class="badge-num absolute top-10 right-0 w-9 h-9 rounded-full flex items-center justify-center font-bold text-lg border-2 border-white">5</span>
+            </div>
+        </a>
+
+        <!-- ======================= 아기자기한 캐릭터 및 장식들 ======================= -->
+        <!-- 캐릭터 1 (왼쪽 상단 서있는 사람) -->
+        <div class="absolute top-[200px] left-[170px] z-10 w-12 h-20 pointer-events-none">
+            <svg viewBox="0 0 50 80">
+                <circle cx="25" cy="15" r="10" fill="#7c2d12"/>
+                <circle cx="25" cy="16" r="8" fill="#fcd34d"/>
+                <rect x="18" y="28" width="14" height="22" rx="4" fill="#ef4444"/>
+                <rect x="18" y="50" width="6" height="20" fill="#1d4ed8"/>
+                <rect x="26" y="50" width="6" height="20" fill="#1d4ed8"/>
+            </svg>
+        </div>
+
+        <!-- 캐릭터 2 (왼쪽 하단 만세하는 사람) -->
+        <div class="absolute bottom-[240px] left-[220px] z-10 w-12 h-20 pointer-events-none">
+            <svg viewBox="0 0 50 80">
+                <circle cx="25" cy="20" r="9" fill="#451a03"/>
+                <circle cx="25" cy="21" r="7.5" fill="#f87171"/>
+                <path d="M 10 25 L 20 35 L 30 35 L 40 25" stroke="#facc15" stroke-width="5" fill="none" stroke-linecap="round"/>
+                <polygon points="18,35 32,35 35,55 15,55" fill="#facc15"/>
+                <rect x="18" y="55" width="5" height="18" fill="#451a03"/>
+                <rect x="27" y="55" width="5" height="18" fill="#451a03"/>
+            </svg>
+        </div>
+
+        <!-- 캐릭터 3 (상단 중앙 서있는 사람) -->
+        <div class="absolute top-[40px] left-[610px] z-10 w-12 h-20 pointer-events-none">
+            <svg viewBox="0 0 50 80">
+                <circle cx="25" cy="15" r="9" fill="#1e293b"/>
+                <circle cx="25" cy="16" r="7.5" fill="#fca5a5"/>
+                <rect x="17" y="27" width="16" height="24" rx="4" fill="#10b981"/>
+                <rect x="17" y="51" width="6" height="18" fill="#1e293b"/>
+                <rect x="27" y="51" width="6" height="18" fill="#1e293b"/>
+            </svg>
+        </div>
+
+        <!-- 뺑뺑이 (회전목마 놀이기구) -->
+        <div class="absolute top-[110px] left-[500px] z-10 w-20 h-16 pointer-events-none">
+            <svg viewBox="0 0 80 60">
+                <ellipse cx="40" cy="45" rx="35" ry="12" fill="#f97316"/>
+                <path d="M 15 45 Q 40 10 65 45" stroke="#0284c7" stroke-width="4" fill="none"/>
+                <path d="M 25 45 Q 40 20 55 45" stroke="#0284c7" stroke-width="4" fill="none"/>
+            </svg>
+        </div>
+
+        <!-- 티켓 부스 (우측 상단) -->
+        <div class="absolute top-[150px] right-[420px] z-10 w-20 h-24 pointer-events-none">
+            <svg viewBox="0 0 80 90">
+                <!-- 지붕 -->
+                <path d="M 10 30 L 40 5 L 70 30 Z" fill="#ef4444"/>
+                <path d="M 15 30 L 25 30 L 20 5 Z" fill="#ffffff" opacity="0.3"/>
+                <path d="M 35 30 L 45 30 L 40 5 Z" fill="#ffffff" opacity="0.3"/>
+                <path d="M 55 30 L 65 30 L 60 5 Z" fill="#ffffff" opacity="0.3"/>
+                <!-- 본체 -->
+                <rect x="15" y="30" width="50" height="50" fill="#f87171"/>
+                <rect x="22" y="40" width="36" height="20" fill="#fef08a" rx="3"/>
+                <text x="40" y="54" font-size="9" font-weight="bold" fill="#dc2626" text-anchor="middle">TICKET</text>
+            </svg>
+        </div>
+
+        <!-- 학교 / 시계탑 건물 (하단 중앙) -->
+        <div class="absolute bottom-[0px] left-[280px] z-10 w-72 h-36 pointer-events-none">
+            <svg viewBox="0 0 280 140">
+                <!-- 좌우 건물 -->
+                <rect x="20" y="60" width="80" height="70" fill="#3b82f6"/>
+                <rect x="180" y="60" width="80" height="70" fill="#3b82f6"/>
+                <!-- 줄무늬 지붕 -->
+                <path d="M 15 60 L 105 60" stroke="#f97316" stroke-width="12" stroke-dasharray="8 8"/>
+                <path d="M 175 60 L 265 60" stroke="#f97316" stroke-width="12" stroke-dasharray="8 8"/>
+                <!-- 창문들 -->
+                <rect x="30" y="75" width="15" height="20" fill="#fef08a"/>
+                <rect x="55" y="75" width="15" height="20" fill="#fef08a"/>
+                <rect x="75" y="75" width="15" height="20" fill="#fef08a"/>
+                <rect x="190" y="75" width="15" height="20" fill="#fef08a"/>
+                <rect x="210" y="75" width="15" height="20" fill="#fef08a"/>
+                <rect x="235" y="75" width="15" height="20" fill="#fef08a"/>
+                <!-- 중앙 시계탑 -->
+                <polygon points="140,5 100,50 180,50" fill="#2563eb"/>
+                <rect x="110" y="45" width="60" height="85" fill="#3b82f6"/>
+                <!-- 시계 -->
+                <circle cx="140" cy="75" r="14" fill="#ffffff"/>
+                <path d="M 140 75 L 140 67 M 140 75 L 146 75" stroke="#1e293b" stroke-width="3" stroke-linecap="round"/>
+                <!-- 입구 아치 -->
+                <path d="M 125 130 A 15 15 0 0 1 155 130 V 130 H 125 Z" fill="#1d4ed8"/>
+            </svg>
+        </div>
+
+        <!-- 업로드/시작 아이콘 (5번 왼쪽 작은 파란 원) -->
+        <div class="absolute bottom-[220px] right-[590px] z-10 w-9 h-9 bg-blue-500 rounded-full flex items-center justify-center text-white border-2 border-white shadow-md">
+            <i class="fa-solid fa-upload text-sm"></i>
+        </div>
+
+
+        <!-- ======================= 우측 메인 타이틀 (유진쌤 아카이브) ======================= -->
+        <div class="absolute top-[180px] right-[50px] z-20 flex items-center justify-center">
+            <div class="hand-drawn-ellipse bg-white/40 backdrop-blur-sm px-12 py-10 flex flex-col items-center justify-center text-center">
+                <h1 class="title-font text-6xl sm:text-7xl font-bold text-[#1e2952] tracking-wider leading-snug select-none">
+                    유진쌤<br>아카이브
+                </h1>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 설정 및 웹앱 연동 관련 스크립트 -->
+    <script>
+        /**
+         * =========================================================
+         * [웹앱 링크 설정 구역]
+         * 원하시는 웹앱 주소(URL)를 아래 큰따옴표("") 안에 입력해 주세요!
+         * 예시: 1: "https://my-quiz-app.netlify.app",
+         * =========================================================
+         */
+        const APP_URLS = {
+            1: "https://script.google.com/a/macros/senedu.kr/s/AKfycbxJvJPVe9uK4DkZNIehONRa-JCb13Ls-mxbFOkIZ7Lyu5c2QRmbAjLzOR9k6Y1bhaSaiA/exec", // 1번 (형광펜 / 학습)
+            2: "https://www.youtube.com/channel/UCD3w2IQSFkf7abjb-rp_YlA", // 2번 (지구본 / 사회)
+            3: "https://blog.naver.com/hailoo1", // 3번 (책 / 중앙 아카이브)
+            4: "https://example.com/app4", // 4번 (헤드폰 / 멀티미디어)
+            5: "https://example.com/app5"  // 5번 (측정기 / 게임·퀴즈)
+        };
+
+        // 페이지 로드 시 각 링크 번호에 URL 자동 매핑
+        document.addEventListener("DOMContentLoaded", () => {
+            Object.keys(APP_URLS).forEach(num => {
+                const linkElem = document.getElementById(`link-${num}`);
+                if (linkElem) {
+                    const url = APP_URLS[num];
+                    linkElem.href = url;
+                    
+                    // 기본 '#' 상태일 때 클릭시 안내 모달/메시지 표시
+                    linkElem.addEventListener("click", (e) => {
+                        if (url === "#" || url === "https://example.com/app" + num) {
+                            e.preventDefault();
+                            alert(`${num}번 웹앱 링크가 아직 설정되지 않았습니다.\n코드 상단의 'APP_URLS'에 연결할 주소를 입력해 주세요!`);
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
