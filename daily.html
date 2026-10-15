@@ -1,0 +1,292 @@
+/**
+ * 2026 학급일지 백엔드 - 상담내용 삭제 기능 및 유연한 연동 추가
+ */
+
+function doGet() {
+  return HtmlService.createTemplateFromFile('Index')
+    .evaluate()
+    .setTitle('학급일지 작성 관리')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+// 날짜 유연 비교를 위한 YYYYMMDD 정규화 함수
+function normalizeDateStr(rawDate) {
+  if (!rawDate) return '';
+  try {
+    if (rawDate instanceof Date) {
+      return Utilities.formatDate(rawDate, Session.getScriptTimeZone(), 'yyyyMMdd');
+    }
+    let str = String(rawDate).replace(/[^0-9]/g, '');
+    if (str.length >= 8) {
+      return str.substring(0, 8);
+    }
+    return str;
+  } catch (e) {
+    return '';
+  }
+}
+
+// YYYY-MM-DD 표준 변환
+function formatDateToYMD(rawDate) {
+  if (!rawDate) return '';
+  try {
+    if (rawDate instanceof Date) {
+      return Utilities.formatDate(rawDate, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    }
+    let digits = String(rawDate).replace(/[^0-9]/g, '');
+    if (digits.length >= 8) {
+      return `${digits.substring(0,4)}-${digits.substring(4,6)}-${digits.substring(6,8)}`;
+    }
+    return String(rawDate).trim();
+  } catch (e) {
+    return '';
+  }
+}
+
+// 1. 종합 데이터 조회
+function getDataForDate(targetDateStr) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const result = {
+    className: '2026 6행복',
+    teacherName: '이유진',
+    allStudents: [],
+    weeklyEvents: [],
+    allEventsList: [],
+    todayConsultations: [],  // 당일 상담 텍스트
+    allConsultationsList: [], // 삭제 관리를 위한 전체 상담 객체 리스트
+    savedLog: null
+  };
+
+  try {
+    const targetNorm = normalizeDateStr(targetDateStr);
+
+    // (1) 설정 읽기
+    const configSheet = ss.getSheetByName('설정');
+    if (configSheet) {
+      const configData = configSheet.getDataRange().getValues();
+      for (let i = 1; i < configData.length; i++) {
+        if (configData[i][0] === '학급명' && configData[i][1]) result.className = configData[i][1];
+        if (configData[i][0] === '담임' && configData[i][1]) result.teacherName = configData[i][1];
+      }
+    }
+
+    // (2) 상담내용 및 학생명단 읽기
+    const counselSheet = ss.getSheetByName('상담내용');
+    const studentSet = new Set();
+
+    if (counselSheet) {
+      const counselData = counselSheet.getDataRange().getValues();
+      for (let i = 1; i < counselData.length; i++) {
+        const rawDate = counselData[i][0];
+        const name = counselData[i][1];
+        const content = counselData[i][2];
+        const rowNorm = normalizeDateStr(rawDate);
+        const displayYMD = formatDateToYMD(rawDate);
+
+        if (name && String(name).trim() !== '' && String(name).trim() !== '학생이름') {
+          studentSet.add(String(name).trim());
+        }
+
+        if (content && String(content).trim() !== '') {
+          // 전체 상담 목록 (삭제 관리용)
+          result.allConsultationsList.push({
+            rowIndex: i + 1,
+            dateStr: displayYMD || String(rawDate),
+            student: String(name).trim(),
+            content: String(content).trim()
+          });
+
+          // 선택 날짜 상담 기록
+          if (rowNorm === targetNorm) {
+            result.todayConsultations.push(`[${String(name).trim()}] ${String(content).trim()}`);
+          }
+        }
+      }
+
+      // 날짜 오름차순 정렬
+      result.allConsultationsList.sort((a, b) => a.dateStr < b.dateStr ? -1 : (a.dateStr > b.dateStr ? 1 : 0));
+    }
+    result.allStudents = Array.from(studentSet);
+
+    // (3) 주간 범위(월~금) 생성
+    const selectedDate = new Date(targetDateStr);
+    const dayOfWeek = selectedDate.getDay();
+    const distanceToMonday = (dayOfWeek === 0) ? -6 : 1 - dayOfWeek;
+    const monday = new Date(selectedDate);
+    monday.setDate(selectedDate.getDate() + distanceToMonday);
+
+    const weekNormMap = {};
+    const dayNames = ['월', '화', '수', '목', '금'];
+    const tempWeeklyEvents = [];
+
+    for (let i = 0; i < 5; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const norm = Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyyMMdd');
+      const md = (d.getMonth() + 1) + '.' + d.getDate() + '(' + dayNames[i] + ')';
+      weekNormMap[norm] = { displayPrefix: md };
+    }
+
+    // (4) 월중행사 조회
+    const eventSheet = ss.getSheetByName('월중행사');
+    if (eventSheet) {
+      const eventData = eventSheet.getDataRange().getValues();
+      for (let i = 1; i < eventData.length; i++) {
+        const rawDate = eventData[i][0];
+        const eventContent = eventData[i][1];
+        const rowNorm = normalizeDateStr(rawDate);
+        const displayYMD = formatDateToYMD(rawDate);
+
+        if (weekNormMap[rowNorm] && eventContent && String(eventContent).trim() !== '') {
+          tempWeeklyEvents.push({
+            dateNorm: rowNorm,
+            text: `${weekNormMap[rowNorm].displayPrefix}: ${String(eventContent).trim()}`
+          });
+        }
+
+        if (eventContent && String(eventContent).trim() !== '') {
+          result.allEventsList.push({
+            rowIndex: i + 1,
+            dateStr: displayYMD || String(rawDate),
+            eventName: String(eventContent)
+          });
+        }
+      }
+
+      tempWeeklyEvents.sort((a, b) => a.dateNorm < b.dateNorm ? -1 : (a.dateNorm > b.dateNorm ? 1 : 0));
+      result.weeklyEvents = tempWeeklyEvents.map(item => item.text);
+
+      result.allEventsList.sort((a, b) => a.dateStr < b.dateStr ? -1 : (a.dateStr > b.dateStr ? 1 : 0));
+    }
+
+    // (5) 학급일지 조회
+    const logSheet = ss.getSheetByName('학급일지');
+    if (logSheet) {
+      const logData = logSheet.getDataRange().getValues();
+      for (let i = logData.length - 1; i >= 1; i--) {
+        const rowNorm = normalizeDateStr(logData[i][1]);
+        if (rowNorm === targetNorm) {
+          result.savedLog = {
+            attendance: logData[i][4],
+            activity: logData[i][5],
+            events: logData[i][6],
+            counseling: logData[i][7],
+            note: logData[i][8]
+          };
+          break;
+        }
+      }
+    }
+
+  } catch (err) {
+    Logger.log('Error in getDataForDate: ' + err.toString());
+  }
+
+  return result;
+}
+
+// 2. 학급일지 저장
+function saveDailyLog(data) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('학급일지');
+  if (!sheet) {
+    sheet = ss.insertSheet('학급일지');
+    sheet.appendRow(['등록일시', '일지일자', '학급명', '담임', '출석변동사항', '주요 학급 활동', '월중행사', '학생 관찰/상담', '특이사항 및 전달사항']);
+  }
+  sheet.appendRow([new Date(), data.date, data.className, data.teacherName, data.attendance, data.activity, data.events, data.counseling, data.note]);
+  return { success: true };
+}
+
+// 3. 상담내용 저장
+function saveConsultation(data) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('상담내용');
+  if (!sheet) {
+    sheet = ss.insertSheet('상담내용');
+    sheet.appendRow(['일자', '학생이름', '관찰 내용', '등록일시']);
+  }
+  sheet.appendRow([data.date, data.student, data.content, new Date()]);
+  return { success: true };
+}
+
+// 4. 상담내용 삭제
+function deleteConsultationRow(rowIndex) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('상담내용');
+  if (sheet && rowIndex > 1) {
+    sheet.deleteRow(rowIndex);
+    return { success: true };
+  }
+  return { success: false };
+}
+
+// 5. 월중행사 등록
+function saveEvent(data) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('월중행사');
+  if (!sheet) {
+    sheet = ss.insertSheet('월중행사');
+    sheet.appendRow(['날짜', '행사내용']);
+  }
+  const parts = data.date.split('-');
+  const formattedDate = `${parts[0]}. ${parseInt(parts[1])}. ${parseInt(parts[2])}`;
+  sheet.appendRow([formattedDate, data.eventName]);
+  return { success: true };
+}
+
+// 6. 월중행사 삭제
+function deleteEventRow(rowIndex) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('월중행사');
+  if (sheet && rowIndex > 1) {
+    sheet.deleteRow(rowIndex);
+    return { success: true };
+  }
+  return { success: false };
+}
+
+// 7. PDF 생성
+function generatePDF(data) {
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; padding: 30px; line-height: 1.6; color: #111; }
+        h1 { text-align: center; font-size: 24px; border-bottom: 2px solid #5b46e0; padding-bottom: 10px; margin-bottom: 20px; color: #333; }
+        .meta-table, .content-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .meta-table td, .content-table th, .content-table td { border: 1px solid #ccc; padding: 10px; font-size: 13px; }
+        .content-table th { background-color: #f0edff; width: 22%; text-align: center; font-weight: bold; color: #4338ca; }
+        .content-table td { white-space: pre-wrap; word-break: break-all; }
+      </style>
+    </head>
+    <body>
+      <h1>${data.className} 학급 일지</h1>
+      <table class="meta-table">
+        <tr>
+          <td style="width:50%;"><strong>일자:</strong> ${data.date}</td>
+          <td style="width:50%;"><strong>담임:</strong> ${data.teacherName}</td>
+        </tr>
+      </table>
+      <table class="content-table">
+        <tr><th>출석 변동사항</th><td>${data.attendance || '전원 출석 (특이사항 없음)'}</td></tr>
+        <tr><th>주간 행사</th><td>${data.events || '등록된 행사 없음'}</td></tr>
+        <tr><th>주요 학급 활동</th><td>${data.activity || '기록 없음'}</td></tr>
+        <tr><th>특이 / 전달사항</th><td>${data.note || '기록 없음'}</td></tr>
+        <tr><th>학생 관찰 / 상담</th><td>${data.counseling || '기록 없음'}</td></tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  const blob = Utilities.newBlob(htmlContent, 'text/html', `학급일지_${data.date}.html`);
+  const pdfBlob = blob.getAs('application/pdf').setName(`${data.className}_학급일지_${data.date}.pdf`);
+
+  DriveApp.createFile(pdfBlob);
+
+  return {
+    base64: Utilities.base64Encode(pdfBlob.getBytes()),
+    fileName: `${data.className}_학급일지_${data.date}.pdf`
+  };
+}
